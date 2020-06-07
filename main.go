@@ -17,5 +17,7 @@ func main() {
 
 	webserv.Init(&wg)
 
+	//TODO contexts and signal handing
+
 	wg.Wait()
 }

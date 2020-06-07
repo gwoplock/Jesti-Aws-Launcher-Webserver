@@ -7,10 +7,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Init(wg *sync.WaitGroup) *http.Server {
+var wg *sync.WaitGroup
+
+func Init(lwg *sync.WaitGroup) *http.Server {
 	logrus.Info("Starting web server")
+
+	wg = lwg
+
 	srv := &http.Server{Addr: ":8080"}
 	http.Handle("/", http.FileServer(http.Dir("./www")))
+	http.HandleFunc("/ws", wsHandler)
 
 	wg.Add(1)
 	go func() {
