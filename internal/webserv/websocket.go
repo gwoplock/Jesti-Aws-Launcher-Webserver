@@ -1,9 +1,8 @@
 package webserv
 
 import (
-	"io"
+	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
@@ -29,15 +28,27 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 func readLoop(c *websocket.Conn) {
 	defer wg.Done()
+	defer c.Close()
 	for {
-		_, p, err := c.NextReader()
+
+		mType, bCont, err := c.ReadMessage()
 		if err != nil {
-			c.Close()
-			break
+			logrus.Error("Error reading message: ", err)
+			return
 		}
 
-		buf := new(strings.Builder)
-		io.Copy(buf, p) // TODO handle error
-		logrus.Trace("go WS message: ", buf.String())
+		if mType == websocket.TextMessage {
+			logrus.Trace("go WS message: ", string(bCont))
+			var message wsMessage
+			err := json.Unmarshal(bCont, &message)
+			if err != nil {
+				logrus.Error("Error unmarshaling Json: ", err)
+			}
+			handleMessage(message, c)
+
+		} else {
+			logrus.Error("Unexpected message type: ", mType)
+		}
+
 	}
 }
